@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARTICIPANT
+  JUDGE
+  ADMIN
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_REVISION
+  FINAL
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  image       String?
+  role        Role     @default(PARTICIPANT)
+  institution String?
+  major       String?
+  phone       String?
+  createdAt   DateTime @default(now())
+
+  submissions Submission[]
+  payments    Payment[]
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  maxMembers  Int
+  fee         Int
+  subCategory String?
+  isActive    Boolean @default(true)
+
+  submissions Submission[]
+}
+
+model Timeline {
+  id        String   @id @default(cuid())
+  phase     String
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  order     Int      @default(0)
+}
+
+model Submission {
+  id         String           @id @default(cuid())
+  userId     String
+  categoryId String
+  title      String
+  abstract   String
+  fileUrl    String?
+  repoUrl    String?
+  demoUrl    String?
+  status     SubmissionStatus @default(DRAFT)
+
+  judge1Score Int?
+  judge1Note  String?
+  judge2Score Int?
+  judge2Note  String?
+  judge3Score Int?
+  judge3Note  String?
+  totalScore  Int?
+  rank        Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  payment  Payment?
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  amount        Int
+  method        String
+  proofUrl      String
+  paymentDate   DateTime?
+  bankName      String?
+  accountNumber String?
+  status        PaymentStatus @default(PENDING)
+  ocrAmount     Float?
+  ocrDate       DateTime?
+  ocrReference  String?
+  validatedAt   DateTime?
+  createdAt     DateTime      @default(now())
+
+  user       User        @relation(fields: [userId], references: [id])
+  submission Submission? @relation(fields: [userId], references: [id])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  type      String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Certificate {
+  id           String   @id @default(cuid())
+  userId       String
+  submissionId String
+  rank         String
+  categoryName String
+  fileUrl      String
+  code         String   @unique
+  createdAt    DateTime @default(now())
+}
